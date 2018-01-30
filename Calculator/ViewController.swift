@@ -18,7 +18,9 @@ class ViewController: UIViewController {
         let digit = sender.currentTitle!
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display.text!
+            if (digit != ".") || (textCurrentlyInDisplay.contains(".")) { //contains(".")) {
             display.text = textCurrentlyInDisplay + digit
+            }
         } else {
             display.text = digit
             userIsInTheMiddleOfTyping = true
