@@ -11,14 +11,19 @@ import UIKit
 class ViewController: UIViewController {
     
     @IBOutlet weak var display: UILabel!
+    @IBOutlet weak var history: UILabel!
     
     var userIsInTheMiddleOfTyping = false
+    override func viewDidLoad() {
+        let btn = UIButton()
+        btn.titleLabel?.adjustsFontForContentSizeCategory = true
+    }
     
     @IBAction func touchDigit(_ sender: UIButton) {
         let digit = sender.currentTitle!
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display.text!
-            if (digit != ".") || (textCurrentlyInDisplay.contains(".")) { //contains(".")) {
+            if (digit != ".") || !(textCurrentlyInDisplay.contains(".")) {
             display.text = textCurrentlyInDisplay + digit
             }
         } else {
@@ -50,6 +55,12 @@ class ViewController: UIViewController {
         }
         if let result = brain.result {
         displayValue = result
+        }
+        if let description = brain.description {
+//            if brain.resultIsPending {
+//                history.text =
+//            }
+            history.text = description + (brain.resultIsPending ? " ..." : " =")
         }
     }
     
