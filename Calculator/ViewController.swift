@@ -23,7 +23,6 @@ class ViewController: UIViewController {
     
     var userIsInTheMiddleOfTyping = false
     
-    
     var displayValue: Double? {
         get {
             if let text = display.text, let value = brain.formatter.number(from: text) as? Double {   //Double(text) {
@@ -56,11 +55,13 @@ class ViewController: UIViewController {
                 display.text = textCurrentlyInDisplay + digit
             }
         } else {
+            if digit == decimalSeparator {
+                display.text = "0" + digit
+            } else {
             display.text = digit
+            }
             userIsInTheMiddleOfTyping = true
         }
-        // print("\(String(describing: digit)) was touched")
-        
     }
     
     @IBAction func performOperation(_ sender: UIButton) {
@@ -91,6 +92,7 @@ class ViewController: UIViewController {
         display.text =  String(display.text!.dropLast())
         if display.text!.isEmpty {
             displayValue = 0
+            history.text = " "
             userIsInTheMiddleOfTyping = false
         }
     }
