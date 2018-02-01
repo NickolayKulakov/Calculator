@@ -13,54 +13,85 @@ class ViewController: UIViewController {
     @IBOutlet weak var display: UILabel!
     @IBOutlet weak var history: UILabel!
     
-    var userIsInTheMiddleOfTyping = false
-    override func viewDidLoad() {
-        let btn = UIButton()
-        btn.titleLabel?.adjustsFontForContentSizeCategory = true
-    }
-    
-    @IBAction func touchDigit(_ sender: UIButton) {
-        let digit = sender.currentTitle!
-        if userIsInTheMiddleOfTyping {
-            let textCurrentlyInDisplay = display.text!
-            if (digit != ".") || !(textCurrentlyInDisplay.contains(".")) {
-            display.text = textCurrentlyInDisplay + digit
-            }
-        } else {
-            display.text = digit
-            userIsInTheMiddleOfTyping = true
+    @IBOutlet weak var tochka: UIButton!{
+        didSet {
+            tochka.setTitle(decimalSeparator, for: UIControlState())
         }
-       // print("\(String(describing: digit)) was touched")
-        
     }
     
-    var displayValue: Double {
+    let decimalSeparator = NumberFormatter().decimalSeparator ?? "."
+    
+    var userIsInTheMiddleOfTyping = false
+    
+    
+    var displayValue: Double? {
         get {
-            return Double(display.text!)!
+            if let text = display.text, let value = brain.formatter.number(from: text) as? Double {   //Double(text) {
+                return value
+            }
+            return nil
         }
         set {
-            display.text = String(newValue)
+            if let value = newValue {
+                display.text = brain.formatter.string(from: NSNumber(value: value))
+            }
+            history.text = description + (brain.resultIsPending ? " ..." : " =")
         }
     }
     
     private var brain = CalculatorBrain()
     
+    @IBAction func touchDigit(_ sender: UIButton) {
+        let digit = sender.currentTitle!
+        if userIsInTheMiddleOfTyping {
+            let textCurrentlyInDisplay = display.text!
+            if (digit == "0") && ((textCurrentlyInDisplay == "0") || (textCurrentlyInDisplay == "-0") ) {
+                return
+            }
+            if (digit != decimalSeparator) && ((textCurrentlyInDisplay == "0") || (textCurrentlyInDisplay == "-0")) {
+                display.text = digit
+                return
+            }
+            if (digit != decimalSeparator) || !(textCurrentlyInDisplay.contains(decimalSeparator)) {
+                display.text = textCurrentlyInDisplay + digit
+            }
+        } else {
+            display.text = digit
+            userIsInTheMiddleOfTyping = true
+        }
+        // print("\(String(describing: digit)) was touched")
+        
+    }
+    
     @IBAction func performOperation(_ sender: UIButton) {
         if userIsInTheMiddleOfTyping {
-            brain.setOperand(displayValue)
+            if let value = displayValue {
+                brain.setOperand(value)
+            }
             userIsInTheMiddleOfTyping = false
         }
         if let mathematicalSymbol = sender.currentTitle {
             brain.performOperation(mathematicalSymbol)
         }
-        if let result = brain.result {
-        displayValue = result
-        }
+        displayValue = brain.result
         if let description = brain.description {
-//            if brain.resultIsPending {
-//                history.text =
-//            }
             history.text = description + (brain.resultIsPending ? " ..." : " =")
+        }
+    }
+    
+    @IBAction func clearAll(_ sender: UIButton) {
+        brain.clear()
+        displayValue = 0
+        history.text = " "
+        userIsInTheMiddleOfTyping = false
+    }
+    
+    @IBAction func backspace(_ sender: UIButton) {
+        guard userIsInTheMiddleOfTyping && !display.text!.isEmpty else { return }
+        display.text =  String(display.text!.dropLast())
+        if display.text!.isEmpty {
+            displayValue = 0
+            userIsInTheMiddleOfTyping = false
         }
     }
     

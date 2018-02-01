@@ -8,10 +8,23 @@
 
 import Foundation
 
+
 struct CalculatorBrain {
+    
+    let formatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 6
+        formatter.notANumberSymbol = "Error"
+        formatter.groupingSeparator = " "
+        formatter.locale = Locale.current
+        return formatter
+    } ()
+    
     
     private var accumulator: Double?
     private var descriptionAccumulator: String?
+   
     var description: String? {
         get {
             if pendingBinaryOperation == nil {
@@ -125,11 +138,16 @@ struct CalculatorBrain {
         }
     }
     
-    
     mutating func setOperand(_ operand: Double) {
         accumulator = operand
         if let value = accumulator {
-            descriptionAccumulator =  String(describing: NSNumber(value: value))
+            descriptionAccumulator = formatter.string(from: NSNumber(value: value)) ?? ""   //String(describing: NSNumber(value: value))
         }
+    }
+    mutating func clear () {
+        accumulator = nil
+        pendingBinaryOperation = nil
+        descriptionAccumulator = " "
+        
     }
 }

@@ -49,7 +49,7 @@
                                                             <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         </state>
                                                         <connections>
-                                                            <action selector="performOperation:" destination="BYZ-38-t0r" eventType="touchUpInside" id="kDm-aL-CZ1"/>
+                                                            <action selector="clearAll:" destination="BYZ-38-t0r" eventType="touchUpInside" id="NIl-T7-NEO"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cXo-kq-i4b">
@@ -60,7 +60,7 @@
                                                             <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         </state>
                                                         <connections>
-                                                            <action selector="performOperation:" destination="BYZ-38-t0r" eventType="touchUpInside" id="yuz-Zh-hZg"/>
+                                                            <action selector="backspace:" destination="BYZ-38-t0r" eventType="touchUpInside" id="zXw-nl-2WS"/>
                                                         </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="trS-70-lkd">
@@ -431,7 +431,7 @@
                                                         <rect key="frame" x="73.5" y="0.0" width="65.5" height="66.5"/>
                                                         <color key="backgroundColor" red="0.94081138959999999" green="0.94081138959999999" blue="0.94081138959999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="30"/>
-                                                        <state key="normal" title=".">
+                                                        <state key="normal" title="ggg">
                                                             <color key="titleColor" red="0.22969863660000001" green="0.33979118009999998" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                         </state>
                                                         <connections>
@@ -490,6 +490,7 @@
                     <connections>
                         <outlet property="display" destination="QqN-u3-B7c" id="VZ1-Cz-dYi"/>
                         <outlet property="history" destination="Sha-Hb-rvb" id="xi5-Lf-dmR"/>
+                        <outlet property="tochka" destination="PEQ-0G-dTD" id="WLV-ea-G6R"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
