@@ -12,6 +12,7 @@ class ViewController: UIViewController {
     
     @IBOutlet weak var display: UILabel!
     @IBOutlet weak var history: UILabel!
+    @IBOutlet weak var displayM: UILabel!
     
     @IBOutlet weak var tochka: UIButton!{
         didSet {
@@ -49,7 +50,7 @@ class ViewController: UIViewController {
                 display.text = error!
             }
             history.text = displayResult.description != " " ? displayResult.description + (displayResult.isPending ? " ..." : " =") : " "
-            // displayM.text = formatter.string(from: NSNumber(value: variableValues["M"] ?? 0))
+            displayM.text = formatter.string(from: NSNumber(value: variableValues["M"] ?? 0))
         }
     }
     
