@@ -25,20 +25,36 @@ class ViewController: UIViewController {
     
     var displayValue: Double? {
         get {
-            if let text = display.text, let value = brain.formatter.number(from: text) as? Double {   //Double(text) {
+            if let text = display.text, let value = formatter.number(from: text) as? Double {   //Double(text) {
                 return value
             }
             return nil
         }
         set {
             if let value = newValue {
-                display.text = brain.formatter.string(from: NSNumber(value: value))
+                display.text = formatter.string(from: NSNumber(value: value))
             }
-            history.text = description + (brain.resultIsPending ? " ..." : " =")
+        }
+    }
+    
+    var displayResult: (result: Double?, isPending: Bool, description: String, error: String?) = (nil, false, " ", nil) {
+        // Наблюдатель Свойства модифицирует три IBOutlet метки
+        didSet {
+            switch displayResult {
+            case (nil, _, " ", nil):
+                displayValue = 0
+            case (let result, _, _, nil):
+                displayValue = result
+            case (_, _, _, let error):
+                display.text = error!
+            }
+            history.text = displayResult.description != " " ? displayResult.description + (displayResult.isPending ? " ..." : " =") : " "
+            // displayM.text = formatter.string(from: NSNumber(value: variableValues["M"] ?? 0))
         }
     }
     
     private var brain = CalculatorBrain()
+    private var variableValues = [String: Double]()
     
     @IBAction func touchDigit(_ sender: UIButton) {
         let digit = sender.currentTitle!
@@ -58,7 +74,7 @@ class ViewController: UIViewController {
             if digit == decimalSeparator {
                 display.text = "0" + digit
             } else {
-            display.text = digit
+                display.text = digit
             }
             userIsInTheMiddleOfTyping = true
         }
@@ -74,27 +90,44 @@ class ViewController: UIViewController {
         if let mathematicalSymbol = sender.currentTitle {
             brain.performOperation(mathematicalSymbol)
         }
-        displayValue = brain.result
-        if let description = brain.description {
-            history.text = description + (brain.resultIsPending ? " ..." : " =")
-        }
+        displayResult = brain.evaluate(using: variableValues)
     }
     
-    @IBAction func clearAll(_ sender: UIButton) {
-        brain.clear()
-        displayValue = 0
-        history.text = " "
+    @IBAction func setM(_ sender: UIButton) {
         userIsInTheMiddleOfTyping = false
+        let symbol = String((sender.currentTitle!).dropFirst())
+        variableValues[symbol] = displayValue
+        displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    @IBAction func pushM(_ sender: UIButton) {
+        brain.setOperand(variable: sender.currentTitle!)
+        displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    
+    @IBAction func clearAll(_ sender: UIButton) {
+        userIsInTheMiddleOfTyping = false
+        brain.clear()
+        variableValues = [:]
+        displayResult = brain.evaluate()
+        //displayValue = 0
+        //history.text = " "
     }
     
     @IBAction func backspace(_ sender: UIButton) {
-        guard userIsInTheMiddleOfTyping && !display.text!.isEmpty else { return }
-        display.text =  String(display.text!.dropLast())
-        if display.text!.isEmpty {
-            displayValue = 0
-            history.text = " "
-            userIsInTheMiddleOfTyping = false
+        if  userIsInTheMiddleOfTyping {
+            guard !display.text!.isEmpty else { return }
+            display.text =  String(display.text!.dropLast())
+            if display.text!.isEmpty {
+                userIsInTheMiddleOfTyping = false
+                displayResult = brain.evaluate(using: variableValues)
+                //    displayValue = 0
+                //  history.text = " "
+            }
+        } else {
+            brain.undo()
+            displayResult = brain.evaluate(using: variableValues)
         }
     }
-    
 }
