@@ -44,8 +44,8 @@ struct CalculatorBrain {
     private enum Operation {
         case nullaryOperation (() -> Double, String)
         case constant(Double)
-        case unaryOperation((Double) -> Double, ((String) -> String)?)
-        case binaryOperation((Double, Double) -> Double, ((String, String) -> String)?)
+        case unaryOperation((Double) -> Double, ((String) -> String)?, ((Double)-> String?)?)
+        case binaryOperation((Double, Double) -> Double, ((String, String) -> String)?, ((Double, Double)->String?)?)
         case equals
     }
     
@@ -53,49 +53,56 @@ struct CalculatorBrain {
         "Ran": Operation.nullaryOperation({Double(arc4random()) / Double(UInt32.max)}, "rand()"),
         "π": Operation.constant(Double.pi),
         "e": Operation.constant(M_E),
-        "±": Operation.unaryOperation({ -$0 }, nil),         //{"±(" + $0 + ")"}
-        "√": Operation.unaryOperation(sqrt, nil),            //{"√(" + $0 + ")"}
-        "cos": Operation.unaryOperation(cos, nil),           //{"cos(" + $0 + ")"}
-        "sin": Operation.unaryOperation(sin, nil),           //{"sin(" + $0 + ")"}
-        "tan": Operation.unaryOperation(tan, nil),           //{"tan(" + $0 + ")"}
-        "sin⁻¹": Operation.unaryOperation(asin, nil),        //{"sin⁻¹(" + $0 + ")"}
-        "cos⁻¹": Operation.unaryOperation(acos, nil),        //{"cos⁻¹(" + $0 + ")"}
-        "tan⁻¹": Operation.unaryOperation(atan, nil),        //{"tan⁻¹(" + $0 + ")"}
-        "ln": Operation.unaryOperation(log, nil),            //{"ln(" + $0 + ")"}
-        "x⁻¹": Operation.unaryOperation({1 / $0}, {"(" + $0 + ")⁻¹"}),
-        "x²": Operation.unaryOperation({$0 * $0}, {"(" + $0 + ")²"}),
-        "×": Operation.binaryOperation({ $0 * $1 }, nil),    //{$0 + "×" + $1}
-        "÷": Operation.binaryOperation({ $0 / $1 }, nil),    //{$0 + "÷" + $1}
-        "+": Operation.binaryOperation({ $0 + $1 }, nil),    //{$0 + "+" + $1}
-        "-": Operation.binaryOperation({ $0 - $1 }, nil),    //{$0 + "−" + $1}
-        "xʸ": Operation.binaryOperation(pow, {$0 + " ^ " + $1}),
+        "±": Operation.unaryOperation({ -$0 }, nil, nil),
+        "√": Operation.unaryOperation(sqrt, nil, {$0 < 0 ? "Error: √ отрицат. числа" : nil}),
+        "cos": Operation.unaryOperation(cos, nil, nil),
+        "sin": Operation.unaryOperation(sin, nil, nil),
+        "tan": Operation.unaryOperation(tan, nil, nil),
+        "sin⁻¹": Operation.unaryOperation(asin, nil, {$0 < -1 || $0 > 1 ? "Error: не в диапазоне [-1,1]" : nil}),
+        "cos⁻¹": Operation.unaryOperation(acos, nil, {$0 < -1 || $0 > 1 ? "Error: не в диапазоне [-1,1]" : nil}),
+        "tan⁻¹": Operation.unaryOperation(atan, nil, {$0 < -1 || $0 > 1 ? "Error: не в диапазоне [-1,1]" : nil}),
+        "ln": Operation.unaryOperation(log, nil, {$0 <= 0 ? "Error: ln отрицат. числа или нуля" : nil}),
+        "x⁻¹": Operation.unaryOperation({1 / $0}, {"(" + $0 + ")⁻¹"}, {$0 == 0.0 ? "Error: Деление на нуль" : nil}),
+        "x²": Operation.unaryOperation({$0 * $0}, {"(" + $0 + ")²"}, nil),
+        "×": Operation.binaryOperation({ $0 * $1 }, nil, nil),
+        "÷": Operation.binaryOperation({ $0 / $1 }, nil, {$1 == 0.0 ? "Error: Деление на нуль" : nil}),
+        "+": Operation.binaryOperation({ $0 + $1 }, nil, nil),
+        "-": Operation.binaryOperation({ $0 - $1 }, nil, nil),
+        "xʸ": Operation.binaryOperation(pow, {$0 + " ^ " + $1}, nil),
         "=": Operation.equals
     ]
-    
+
     struct PendingBinaryOperation {
         let function: (Double, Double) -> Double
         let firstOperand: Double
         var descriptionFunction: (String, String) -> String
         var descriptionOperand: String
+        var validator: ((Double, Double) -> String?)?
         
-        func perform(with secondOperand: Double) -> Double {
+        func perform (with secondOperand: Double) -> Double {
             return function(firstOperand, secondOperand)
         }
         
-        func performDescription(with secondOperand: String) -> String {
+        func performDescription (with secondOperand: String) -> String {
             return descriptionFunction(descriptionOperand, secondOperand)
         }
+        
+        func validate (with secondOperand: Double) -> String? {
+            guard let validator = validator else {return nil}
+            return validator(firstOperand, secondOperand)
+        }
     }
-    
-    
+
+
     func evaluate(using variables: Dictionary<String, Double>? = nil) -> (result: Double?, isPending: Bool, description: String, error: String?) {
         //MARK: - Local variables evaluate
         
-        var cache: (accumulator: Double?, descriptionAccumulator: String?)         //  tuple
+        var cache: (accumulator: Double?, descriptionAccumulator: String?)   //  tuple
+        
         var error: String?
+        
         var pendingBinaryOperation: PendingBinaryOperation?
        
-
         var description: String? {
             get {
                 if pendingBinaryOperation == nil {
@@ -134,8 +141,8 @@ struct CalculatorBrain {
         
         func performPendingBinaryOperation() {
             if pendingBinaryOperation != nil && cache.accumulator != nil {
+                error = pendingBinaryOperation!.validate(with: cache.accumulator!)
                 cache.accumulator = pendingBinaryOperation!.perform(with: cache.accumulator!)
-                
                 cache.descriptionAccumulator = pendingBinaryOperation!.performDescription(with: cache.descriptionAccumulator!)
                 pendingBinaryOperation = nil
             }
@@ -151,8 +158,9 @@ struct CalculatorBrain {
                 case .constant(let value):
                     cache = (value, symbol)
                     
-                case .unaryOperation(let function, var descriptionFunction):
+                case .unaryOperation(let function, var descriptionFunction,let validator ):
                     if cache.accumulator != nil {
+                        error = validator?(cache.accumulator!)
                         cache.accumulator = function(cache.accumulator!)
                         if descriptionFunction == nil {
                             descriptionFunction = {symbol + "(" + $0 + ")"}
@@ -160,13 +168,13 @@ struct CalculatorBrain {
                         cache.descriptionAccumulator = descriptionFunction!(cache.descriptionAccumulator!)
                     }
                     
-                case .binaryOperation(let function, var descriptionFunction):
+                case .binaryOperation(let function, var descriptionFunction, let validator ):
                     performPendingBinaryOperation()
                     if cache.accumulator != nil {
                         if descriptionFunction == nil {
                             descriptionFunction = {$0 + " " + symbol + " " + $1}
                         }
-                        pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: cache.accumulator!, descriptionFunction: descriptionFunction!, descriptionOperand: cache.descriptionAccumulator!)
+                        pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: cache.accumulator!, descriptionFunction: descriptionFunction!, descriptionOperand: cache.descriptionAccumulator!, validator: validator)
                         cache = (nil, nil)
                     }
                     
@@ -178,7 +186,7 @@ struct CalculatorBrain {
         
         
         // MARK: - BODY EVALUATE
-        //---------------Body of evaluate-------------------
+//---------------Body of evaluate-------------------
         guard !internalProgram.isEmpty else {
             return (nil, false, " ", nil)
         }
@@ -194,7 +202,7 @@ struct CalculatorBrain {
         }
         return (result, resultIsPending, description ?? " ", error)
     }
-//------------------------------------------------
+//-----------------------------------------------
 
     @available(iOS, deprecated, message: "No longer needed")
     var description: String? {
@@ -202,14 +210,14 @@ struct CalculatorBrain {
                 return evaluate().description
             }
         }
-    
+
     @available(iOS, deprecated, message: "No longer needed")
     var result: Double? {
         get {
             return evaluate().result
         }
     }
-    
+
     @available(iOS, deprecated, message: "No longer needed")
     var resultIsPending: Bool {
         get {
@@ -217,7 +225,7 @@ struct CalculatorBrain {
         }
     }
 }
-    
+
     let formatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal

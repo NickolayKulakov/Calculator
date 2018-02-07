@@ -26,7 +26,7 @@ class ViewController: UIViewController {
     
     var displayValue: Double? {
         get {
-            if let text = display.text, let value = formatter.number(from: text) as? Double {   //Double(text) {
+            if let text = display.text, let value = formatter.number(from: text) as? Double {
                 return value
             }
             return nil
@@ -39,7 +39,7 @@ class ViewController: UIViewController {
     }
     
     var displayResult: (result: Double?, isPending: Bool, description: String, error: String?) = (nil, false, " ", nil) {
-        // Наблюдатель Свойства модифицирует три IBOutlet метки
+        // Observer Properties modifies three IBOutlet tags
         didSet {
             switch displayResult {
             case (nil, _, " ", nil):
