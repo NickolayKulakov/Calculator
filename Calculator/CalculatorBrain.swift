@@ -45,7 +45,7 @@ struct CalculatorBrain {
         case nullaryOperation (() -> Double, String)
         case constant(Double)
         case unaryOperation((Double) -> Double, ((String) -> String)?, ((Double)-> String?)?)
-        case binaryOperation((Double, Double) -> Double, ((String, String) -> String)?, ((Double, Double)->String?)?)
+        case binaryOperation((Double, Double) -> Double, ((String, String) -> String)?, ((Double, Double)->String?)?, Int)
         case equals
     }
     
@@ -64,11 +64,11 @@ struct CalculatorBrain {
         "ln": Operation.unaryOperation(log, nil, {$0 <= 0 ? "Error: ln отрицат. числа или нуля" : nil}),
         "x⁻¹": Operation.unaryOperation({1 / $0}, {"(" + $0 + ")⁻¹"}, {$0 == 0.0 ? "Error: Деление на нуль" : nil}),
         "x²": Operation.unaryOperation({$0 * $0}, {"(" + $0 + ")²"}, nil),
-        "×": Operation.binaryOperation({ $0 * $1 }, nil, nil),
-        "÷": Operation.binaryOperation({ $0 / $1 }, nil, {$1 == 0.0 ? "Error: Деление на нуль" : nil}),
-        "+": Operation.binaryOperation({ $0 + $1 }, nil, nil),
-        "-": Operation.binaryOperation({ $0 - $1 }, nil, nil),
-        "xʸ": Operation.binaryOperation(pow, {$0 + " ^ " + $1}, nil),
+        "×": Operation.binaryOperation({ $0 * $1 }, nil, nil, 1),
+        "÷": Operation.binaryOperation({ $0 / $1 }, nil, {$1 == 0.0 ? "Error: Деление на нуль" : nil}, 1),
+        "+": Operation.binaryOperation({ $0 + $1 }, nil, nil, 0),
+        "-": Operation.binaryOperation({ $0 - $1 }, nil, nil, 0),
+        "xʸ": Operation.binaryOperation(pow, {$0 + " ^ " + $1}, nil, 2),
         "=": Operation.equals
     ]
 
@@ -78,13 +78,19 @@ struct CalculatorBrain {
         var descriptionFunction: (String, String) -> String
         var descriptionOperand: String
         var validator: ((Double, Double) -> String?)?
+        var prevPrecedence: Int
+        var precedence: Int
         
         func perform (with secondOperand: Double) -> Double {
             return function(firstOperand, secondOperand)
         }
         
         func performDescription (with secondOperand: String) -> String {
-            return descriptionFunction(descriptionOperand, secondOperand)
+            var descriptionOperandNew = descriptionOperand
+            if prevPrecedence < precedence {
+                descriptionOperandNew = "(" + descriptionOperandNew + ")"
+            }
+            return descriptionFunction(descriptionOperandNew, secondOperand)
         }
         
         func validate (with secondOperand: Double) -> String? {
@@ -96,12 +102,13 @@ struct CalculatorBrain {
 
     func evaluate(using variables: Dictionary<String, Double>? = nil) -> (result: Double?, isPending: Bool, description: String, error: String?) {
         //MARK: - Local variables evaluate
-        
         var cache: (accumulator: Double?, descriptionAccumulator: String?)   //  tuple
         
         var error: String?
         
         var pendingBinaryOperation: PendingBinaryOperation?
+        
+        var prevPrecedence = Int.max
        
         var description: String? {
             get {
@@ -144,6 +151,7 @@ struct CalculatorBrain {
                 error = pendingBinaryOperation!.validate(with: cache.accumulator!)
                 cache.accumulator = pendingBinaryOperation!.perform(with: cache.accumulator!)
                 cache.descriptionAccumulator = pendingBinaryOperation!.performDescription(with: cache.descriptionAccumulator!)
+                prevPrecedence = pendingBinaryOperation!.precedence
                 pendingBinaryOperation = nil
             }
         }
@@ -168,13 +176,13 @@ struct CalculatorBrain {
                         cache.descriptionAccumulator = descriptionFunction!(cache.descriptionAccumulator!)
                     }
                     
-                case .binaryOperation(let function, var descriptionFunction, let validator ):
+                case .binaryOperation(let function, var descriptionFunction, let validator, let precedence):
                     performPendingBinaryOperation()
                     if cache.accumulator != nil {
                         if descriptionFunction == nil {
                             descriptionFunction = {$0 + " " + symbol + " " + $1}
                         }
-                        pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: cache.accumulator!, descriptionFunction: descriptionFunction!, descriptionOperand: cache.descriptionAccumulator!, validator: validator)
+                        pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: cache.accumulator!, descriptionFunction: descriptionFunction!, descriptionOperand: cache.descriptionAccumulator!, validator: validator, prevPrecedence: prevPrecedence, precedence: precedence)
                         cache = (nil, nil)
                     }
                     
